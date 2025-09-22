@@ -1,22 +1,21 @@
--- Script para King Legacy - Auto Kill Final IMPROVADO
+-- Script para King Legacy - Auto Kill Final ULTRA RÁPIDO
 -- LocalScript
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 
 -- Criar a GUI com proteção contra morte
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "KingLegacyAutoKillFinal"
-screenGui.ResetOnSpawn = false -- Impede que a GUI resete quando o personagem morrer
+screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 250)
+mainFrame.Size = UDim2.new(0, 320, 0, 280)
 mainFrame.Position = UDim2.new(0, 10, 0, 10)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 mainFrame.BorderSizePixel = 0
@@ -24,33 +23,22 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Adicionar efeito de sombra para melhor visualização
-local shadow = Instance.new("Frame")
-shadow.Size = UDim2.new(1, 10, 1, 10)
-shadow.Position = UDim2.new(0, -5, 0, -5)
-shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-shadow.BackgroundTransparency = 0.8
-shadow.BorderSizePixel = 0
-shadow.ZIndex = -1
-shadow.Parent = mainFrame
-Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 12)
-
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 45)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-title.Text = "KING LEGACY AUTO KILL FINAL"
+title.Text = "KING LEGACY AUTO KILL ULTRA RÁPIDO"
 title.TextColor3 = Color3.fromRGB(255, 215, 0)
-title.TextSize = 18
+title.TextSize = 16
 title.Font = Enum.Font.GothamBold
 title.Parent = mainFrame
 Instance.new("UICorner", title).CornerRadius = UDim.new(0, 8)
 
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0.85, 0, 0, 50)
-toggleButton.Position = UDim2.new(0.075, 0, 0.22, 0)
+toggleButton.Position = UDim2.new(0.075, 0, 0.2, 0)
 toggleButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
 toggleButton.Text = "ATIVAR AUTO KILL"
 toggleButton.TextColor3 = Color3.new(1, 1, 1)
@@ -61,7 +49,7 @@ Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 6)
 
 local autoClickToggle = Instance.new("TextButton")
 autoClickToggle.Size = UDim2.new(0.4, 0, 0, 35)
-autoClickToggle.Position = UDim2.new(0.075, 0, 0.48, 0)
+autoClickToggle.Position = UDim2.new(0.075, 0, 0.42, 0)
 autoClickToggle.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
 autoClickToggle.Text = "AUTO CLICK: ON"
 autoClickToggle.TextColor3 = Color3.new(1, 1, 1)
@@ -70,9 +58,20 @@ autoClickToggle.TextSize = 13
 autoClickToggle.Parent = mainFrame
 Instance.new("UICorner", autoClickToggle).CornerRadius = UDim.new(0, 6)
 
+local aggressiveToggle = Instance.new("TextButton")
+aggressiveToggle.Size = UDim2.new(0.4, 0, 0, 35)
+aggressiveToggle.Position = UDim2.new(0.525, 0, 0.42, 0)
+aggressiveToggle.BackgroundColor3 = Color3.fromRGB(60, 100, 200)
+aggressiveToggle.Text = "AGGRESSIVE: ON"
+aggressiveToggle.TextColor3 = Color3.new(1, 1, 1)
+aggressiveToggle.Font = Enum.Font.GothamBold
+aggressiveToggle.TextSize = 13
+aggressiveToggle.Parent = mainFrame
+Instance.new("UICorner", aggressiveToggle).CornerRadius = UDim.new(0, 6)
+
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.85, 0, 0, 30)
-statusLabel.Position = UDim2.new(0.075, 0, 0.65, 0)
+statusLabel.Position = UDim2.new(0.075, 0, 0.58, 0)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Status: Desativado"
 statusLabel.TextColor3 = Color3.new(1, 1, 1)
@@ -82,53 +81,33 @@ statusLabel.Parent = mainFrame
 
 local targetLabel = Instance.new("TextLabel")
 targetLabel.Size = UDim2.new(0.85, 0, 0, 25)
-targetLabel.Position = UDim2.new(0.075, 0, 0.8, 0)
+targetLabel.Position = UDim2.new(0.075, 0, 0.7, 0)
 targetLabel.BackgroundTransparency = 1
 targetLabel.Text = "Alvo: Nenhum | Slot: 1"
 targetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 targetLabel.TextSize = 12
 targetLabel.Parent = mainFrame
 
--- Botão de minimizar
-local minimizeButton = Instance.new("TextButton")
-minimizeButton.Size = UDim2.new(0, 25, 0, 25)
-minimizeButton.Position = UDim2.new(1, -30, 0, 5)
-minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-minimizeButton.Text = "_"
-minimizeButton.TextColor3 = Color3.new(1, 1, 1)
-minimizeButton.Font = Enum.Font.GothamBold
-minimizeButton.TextSize = 16
-minimizeButton.Parent = mainFrame
-Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 4)
+local distanceLabel = Instance.new("TextLabel")
+distanceLabel.Size = UDim2.new(0.85, 0, 0, 20)
+distanceLabel.Position = UDim2.new(0.075, 0, 0.8, 0)
+distanceLabel.BackgroundTransparency = 1
+distanceLabel.Text = "Distância: 0"
+distanceLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+distanceLabel.TextSize = 11
+distanceLabel.Parent = mainFrame
 
 -- Variáveis de controle
 local autoKillEnabled = false
 local targetPlayer = nil
 local connection = nil
 local autoClickEnabled = true
+local aggressiveMode = true
 local lastSlotChange = 0
-local slotCooldown = 1.5
+local slotCooldown = 1.5 -- Reduzido para ser mais rápido
 local currentSlot = 1
-local isMinimized = false
-local originalSize = mainFrame.Size
-local minimizedSize = UDim2.new(0, 300, 0, 45)
-
--- Função para minimizar/restaurar a GUI
-local function toggleMinimize()
-    if isMinimized then
-        -- Restaurar
-        mainFrame.Size = originalSize
-        minimizeButton.Text = "_"
-        isMinimized = false
-    else
-        -- Minimizar
-        mainFrame.Size = minimizedSize
-        minimizeButton.Text = "□"
-        isMinimized = true
-    end
-end
-
-minimizeButton.MouseButton1Click:Connect(toggleMinimize)
+local lastTeleport = 0
+local teleportCooldown = 0.1 -- Teleporte muito mais rápido
 
 -- Aguardar o player carregar
 local function waitForCharacter()
@@ -140,17 +119,16 @@ player.CharacterAdded:Connect(function(character)
     waitForCharacter()
     if autoKillEnabled then
         statusLabel.Text = "Status: ATIVADO (Reconectado)"
-        task.wait(3) -- Pequeno delay após respawn
+        task.wait(2)
         statusLabel.Text = "Status: ATIVADO"
     end
 end)
 
--- Inicializar
 waitForCharacter()
 
 local mouse = player:GetMouse()
 
--- Encontrar player mais próximo com alcance maior
+-- Encontrar player mais próximo com alcance maior e mais rápido
 local function findNearestPlayer()
     local nearest, shortest = nil, math.huge
     local char = player.Character
@@ -163,7 +141,7 @@ local function findNearestPlayer()
             local hum = other.Character:FindFirstChildOfClass("Humanoid")
             if oRoot and hum and hum.Health > 0 then
                 local dist = (root.Position - oRoot.Position).Magnitude
-                if dist < shortest and dist < 150 then
+                if dist < shortest and dist < 200 then -- Alcance aumentado
                     shortest = dist
                     nearest = other
                 end
@@ -173,61 +151,74 @@ local function findNearestPlayer()
     return nearest, shortest
 end
 
--- Clique rápido melhorado
-local function rapidAutoClick()
+-- Clique ultra rápido
+local function ultraRapidClick()
     if not autoClickEnabled then return end
-    for i = 1, 3 do
+    for i = 1, 5 do -- Aumentado para 5 cliques
         VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, true, game, 0)
-        task.wait(0.02)
+        task.wait(0.01) -- Quase instantâneo
         VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, false, game, 0)
-        task.wait(0.02)
+        task.wait(0.01)
     end
 end
 
--- Usar tecla J uma vez para empurrar jogadores
-local function useJPush()
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.J, false, game)
-    task.wait(0.15)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.J, false, game)
-    task.wait(0.1)
-end
-
--- Sequência de ataques otimizada
-local function executeAttackSequence()
-    local attackKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V, Enum.KeyCode.E, Enum.KeyCode.B}
-    
-    useJPush()
-    
-    for _, key in ipairs(attackKeys) do
-        if not autoKillEnabled then break end
-        VirtualInputManager:SendKeyEvent(true, key, false, game)
-        task.wait(0.1)
-        VirtualInputManager:SendKeyEvent(false, key, false, game)
-        rapidAutoClick()
-        task.wait(0.06)
-    end
-end
-
--- Teleporte melhorado para manter distância ideal
-local function smoothTeleportToTarget()
+-- Teleporte ultra rápido que segue o jogador continuamente
+local function ultraFastTeleportToTarget()
     if not targetPlayer or not targetPlayer.Character then return end
     local tRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
     local pRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not tRoot or not pRoot then return end
     
+    local currentTime = tick()
+    if currentTime - lastTeleport < teleportCooldown then return end
+    lastTeleport = currentTime
+    
+    -- Calcular posição ideal para ficar colado no alvo
     local dir = (tRoot.Position - pRoot.Position).Unit
     local distance = (tRoot.Position - pRoot.Position).Magnitude
     
-    if distance < 8 then
-        local pos = tRoot.Position - dir * 12
+    -- Ficar sempre muito próximo do alvo (2-5 unidades de distância)
+    local targetDistance = 3
+    if distance > targetDistance + 1 or distance < targetDistance - 1 then
+        local pos = tRoot.Position - dir * targetDistance
         pRoot.CFrame = CFrame.new(pos, tRoot.Position)
-    else
-        local pos = tRoot.Position - dir * 10
-        pRoot.CFrame = CFrame.new(pos, tRoot.Position)
+    end
+    
+    -- Atualizar distância na GUI
+    distanceLabel.Text = "Distância: " .. math.floor(distance)
+    
+    return distance
+end
+
+-- Sequência de ataques ULTRA RÁPIDA
+local function ultraFastAttackSequence()
+    local attackKeys = {
+        Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, 
+        Enum.KeyCode.V, Enum.KeyCode.E, Enum.KeyCode.B,
+        Enum.KeyCode.Q, Enum.KeyCode.R, Enum.KeyCode.T
+    }
+    
+    -- Ataque mais agressivo com tecla J
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+    
+    -- Executar todos os ataques quase simultaneamente
+    for _, key in ipairs(attackKeys) do
+        if not autoKillEnabled then break end
+        
+        -- Pressionar e soltar rapidamente
+        VirtualInputManager:SendKeyEvent(true, key, false, game)
+        task.wait(0.03) -- Muito mais rápido
+        VirtualInputManager:SendKeyEvent(false, key, false, game)
+        
+        -- Clique rápido entre ataques
+        ultraRapidClick()
+        task.wait(0.02)
     end
 end
 
--- Teclas numéricas (1-4)
+-- Teclas numéricas (1-4) com mudança mais rápida
 local numberKeys = {
     [1] = Enum.KeyCode.One,
     [2] = Enum.KeyCode.Two,
@@ -235,8 +226,8 @@ local numberKeys = {
     [4] = Enum.KeyCode.Four,
 }
 
--- Mudança de slot mais lenta
-local function changeSlotSlowly()
+-- Mudança de slot RÁPIDA
+local function changeSlotFast()
     local currentTime = tick()
     if currentTime - lastSlotChange < slotCooldown then
         return currentSlot
@@ -245,27 +236,29 @@ local function changeSlotSlowly()
     lastSlotChange = currentTime
     currentSlot = (currentSlot % 4) + 1
     
+    -- Mudança instantânea de slot
+    local key = numberKeys[currentSlot]
+    if key then
+        VirtualInputManager:SendKeyEvent(true, key, false, game)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, key, false, game)
+    end
+    
     targetLabel.Text = "Alvo: " .. (targetPlayer and targetPlayer.Name or "Nenhum") .. " | Slot: " .. currentSlot
     
     return currentSlot
 end
 
--- Loop do auto kill otimizado
-local lastExecution = 0
-local cooldown = 1.2
-
-local function autoKillLoop()
+-- Loop principal ULTRA RÁPIDO
+local function ultraFastKillLoop()
     if not autoKillEnabled then return end
 
-    if tick() - lastExecution < cooldown then return end
-    lastExecution = tick()
-
-    -- Verificar se o personagem do jogador existe
+    -- Verificar se o personagem existe
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
         return
     end
 
-    -- Verificar se o alvo atual ainda é válido
+    -- Verificar alvo atual
     if targetPlayer and targetPlayer.Character then
         local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
         if not hum or hum.Health <= 0 then
@@ -274,10 +267,10 @@ local function autoKillLoop()
         end
     end
 
-    -- Procurar novo alvo se necessário
+    -- Procurar novo alvo
     if not targetPlayer then
         local nearest, dist = findNearestPlayer()
-        if nearest and dist < 140 then
+        if nearest and dist < 180 then
             targetPlayer = nearest
             targetLabel.Text = "Alvo: " .. nearest.Name .. " | Slot: " .. currentSlot
         else
@@ -286,23 +279,25 @@ local function autoKillLoop()
         end
     end
 
-    -- Atacar o alvo
+    -- SEQUÊNCIA ULTRA RÁPIDA DE ATAQUE
     if targetPlayer and targetPlayer.Character then
-        smoothTeleportToTarget()
-
-        local slot = changeSlotSlowly()
-        local key = numberKeys[slot]
+        -- 1. Teleportar para ficar COLADO no alvo
+        ultraFastTeleportToTarget()
         
-        if key then
-            VirtualInputManager:SendKeyEvent(true, key, false, game)
-            task.wait(0.4)
-            VirtualInputManager:SendKeyEvent(false, key, false, game)
-            task.wait(0.3)
+        -- 2. Mudar slot rapidamente (se necessário)
+        changeSlotFast()
+        
+        -- 3. Executar sequência de ataques ultra rápida
+        ultraFastAttackSequence()
+        
+        -- 4. Clique extra garantido
+        ultraRapidClick()
+        
+        -- 5. Se modo agressivo, repetir teleporte para garantir proximidade
+        if aggressiveMode then
+            task.wait(0.05)
+            ultraFastTeleportToTarget()
         end
-
-        executeAttackSequence()
-        task.wait(0.2)
-        rapidAutoClick()
     end
 end
 
@@ -313,10 +308,11 @@ toggleButton.MouseButton1Click:Connect(function()
     if autoKillEnabled then
         toggleButton.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
         toggleButton.Text = "DESATIVAR AUTO KILL"
-        statusLabel.Text = "Status: ATIVADO"
+        statusLabel.Text = "Status: ATIVADO - ULTRA RÁPIDO"
         statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         
-        connection = RunService.Heartbeat:Connect(autoKillLoop)
+        -- Usar RenderStepped para máxima velocidade
+        connection = RunService.RenderStepped:Connect(ultraFastKillLoop)
     else
         toggleButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
         toggleButton.Text = "ATIVAR AUTO KILL"
@@ -329,6 +325,7 @@ toggleButton.MouseButton1Click:Connect(function()
         end
         targetPlayer = nil
         targetLabel.Text = "Alvo: Nenhum | Slot: 1"
+        distanceLabel.Text = "Distância: 0"
         currentSlot = 1
     end
 end)
@@ -345,17 +342,42 @@ autoClickToggle.MouseButton1Click:Connect(function()
     end
 end)
 
--- Atalhos melhorados
+-- Botão modo agressivo
+aggressiveToggle.MouseButton1Click:Connect(function()
+    aggressiveMode = not aggressiveMode
+    if aggressiveMode then
+        aggressiveToggle.BackgroundColor3 = Color3.fromRGB(60, 100, 200)
+        aggressiveToggle.Text = "AGGRESSIVE: ON"
+        teleportCooldown = 0.05 -- Modo agressivo é ainda mais rápido
+    else
+        aggressiveToggle.BackgroundColor3 = Color3.fromRGB(200, 100, 60)
+        aggressiveToggle.Text = "AGGRESSIVE: OFF"
+        teleportCooldown = 0.1
+    end
+end)
+
+-- Atalhos ULTRA RÁPIDOS
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     
+    -- Shift + T para teleporte instantâneo
     if input.KeyCode == Enum.KeyCode.T and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-        smoothTeleportToTarget()
+        ultraFastTeleportToTarget()
     end
     
+    -- Shift + R para resetar alvo
     if input.KeyCode == Enum.KeyCode.R and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
         targetPlayer = nil
         targetLabel.Text = "Alvo: Resetado | Slot: " .. currentSlot
+    end
+    
+    -- Shift + F para modo ultra rápido
+    if input.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        aggressiveMode = true
+        teleportCooldown = 0.03
+        aggressiveToggle.BackgroundColor3 = Color3.fromRGB(200, 60, 200)
+        aggressiveToggle.Text = "AGGRESSIVE: ULTRA"
+        statusLabel.Text = "Status: MODO ULTRA ATIVADO"
     end
 end)
 
@@ -369,13 +391,14 @@ end)
 -- Notificação de sucesso
 task.wait(2)
 game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "King Legacy Auto Kill FINAL",
-    Text = "Script carregado com sucesso! GUI não desaparece ao morrer.",
+    Title = "King Legacy Auto Kill ULTRA RÁPIDO",
+    Text = "Script ULTRA RÁPIDO carregado!",
     Duration = 5
 })
 
-print("✅ King Legacy Auto Kill FINAL carregado!")
-print("🎯 Use Shift + T para teleporte rápido")
+print("⚡ King Legacy Auto Kill ULTRA RÁPIDO carregado!")
+print("🎯 Use Shift + T para teleporte instantâneo")
 print("🔄 Use Shift + R para resetar alvo")
-print("📌 GUI permanece visível mesmo após morte")
-print("⚡ Versão FINAL - Impossível de escapar!")
+print("💥 Use Shift + F para modo ULTRA RÁPIDO")
+print("📌 O script agora segue o alvo continuamente")
+print("⚡ TODOS os ataques vão acertar o alvo!")
