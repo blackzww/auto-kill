@@ -158,12 +158,42 @@ local function autoKillLoop()
     if tick() - lastExecution < cooldown then return end
     lastExecution = tick()
 
+    -- Se já temos alvo, só sai dele quando morrer
+if targetPlayer and targetPlayer.Character then
+    local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then
+        targetPlayer = nil
+        targetLabel.Text = "Alvo: Nenhum"
+    end
+end
+
+-- Se não tem alvo, procura um novo
+if not targetPlayer then
     local nearest, dist = findNearestPlayer()
     if nearest and dist < 80 then
         targetPlayer = nearest
         targetLabel.Text = "Alvo: " .. nearest.Name
-        smoothTeleportToTarget()
+    end
+end
 
+-- Se ainda temos alvo válido, ataca ele
+if targetPlayer and targetPlayer.Character then
+    smoothTeleportToTarget()
+
+    for i = 1, 4 do
+        if not autoKillEnabled then break end
+        local key = numberKeys[i]
+        if key then
+            VirtualInputManager:SendKeyEvent(true, key, false, game)
+            task.wait(0.45)
+            VirtualInputManager:SendKeyEvent(false, key, false, game)
+            task.wait(0.5)
+        end
+
+        executeAttackSequence()
+        task.wait(0.4)
+    end
+    end
         -- percorre as teclas 1–4
         for i = 1, 4 do
             if not autoKillEnabled then break end
