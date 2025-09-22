@@ -148,24 +148,37 @@ local numberKeys = {
 }
 
 -- Loop do auto kill
+local lastExecution = 0
+local cooldown = 1.2 -- segundos entre cada ciclo
+
 local function autoKillLoop()
     if not autoKillEnabled then return end
+
+    -- cooldown para evitar rodar 60x por segundo
+    if tick() - lastExecution < cooldown then return end
+    lastExecution = tick()
+
     local nearest, dist = findNearestPlayer()
     if nearest and dist < 80 then
         targetPlayer = nearest
         targetLabel.Text = "Alvo: " .. nearest.Name
         smoothTeleportToTarget()
+
+        -- percorre as teclas 1–4
         for i = 1, 4 do
             if not autoKillEnabled then break end
             local key = numberKeys[i]
             if key then
+                -- segura tecla mais tempo
                 VirtualInputManager:SendKeyEvent(true, key, false, game)
-                task.wait(0.2)
+                task.wait(0.45)
                 VirtualInputManager:SendKeyEvent(false, key, false, game)
-                task.wait(0.3)
+                task.wait(0.5) -- espera antes de mudar para próxima
             end
+
+            -- executa ataques dessa ferramenta
             executeAttackSequence()
-            task.wait(0.2)
+            task.wait(0.4)
         end
     else
         targetPlayer = nil
