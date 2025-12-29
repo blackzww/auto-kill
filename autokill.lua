@@ -1,4 +1,5 @@
--- AutoKill CORE v8.2
+-- AutoKill CORE v8.3
+-- NO CLICK / REMOTE BASED
 -- Toggle Safe / WindUI Ready
 -- Stable Delta Version
 -- by blackzw
@@ -8,13 +9,21 @@
 --------------------------------------------------
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VIM = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local lp = Players.LocalPlayer
-local cam = workspace.CurrentCamera
 
 --------------------------------------------------
--- GLOBAL STATE (PARA HUB)
+-- REMOTE (KING LEGACY)
+--------------------------------------------------
+local SkillRemote = ReplicatedStorage
+    :WaitForChild("Chest")
+    :WaitForChild("Remotes")
+    :WaitForChild("Functions")
+    :WaitForChild("SkillAction")
+
+--------------------------------------------------
+-- GLOBAL STATE (HUB SAFE)
 --------------------------------------------------
 getgenv().AUTOKILL_ENABLED = getgenv().AUTOKILL_ENABLED or false
 
@@ -43,7 +52,6 @@ end
 --------------------------------------------------
 local function applyAntiHit(char, state)
     if not char then return end
-
     for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("BasePart") then
             v.CanCollide = not state
@@ -78,26 +86,7 @@ local function getClosestPlayer()
 end
 
 --------------------------------------------------
--- CLICK / KEYS
---------------------------------------------------
-local function autoClick()
-    local size = cam.ViewportSize
-
-    -- clica no canto inferior direito (fora de qualquer UI)
-    local x = size.X - 10
-    local y = size.Y - 10
-
-    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-end
-
-local function press(key)
-    VIM:SendKeyEvent(true, key, false, game)
-    VIM:SendKeyEvent(false, key, false, game)
-end
-
---------------------------------------------------
--- RENDER LOOP
+-- RENDER LOOP (TP + LOOK)
 --------------------------------------------------
 local function startRender()
     if renderConnection then return end
@@ -138,7 +127,7 @@ local function stopRender()
 end
 
 --------------------------------------------------
--- MAIN LOOP (SÓ 1 VEZ)
+-- MAIN LOOP (REMOTE ATTACK)
 --------------------------------------------------
 if not loopStarted then
     loopStarted = true
@@ -146,14 +135,12 @@ if not loopStarted then
     task.spawn(function()
         while true do
             if getgenv().AUTOKILL_ENABLED then
-                autoClick()
-                press(Enum.KeyCode.Z)
-                press(Enum.KeyCode.X)
-                press(Enum.KeyCode.C)
-                press(Enum.KeyCode.V)
-                press(Enum.KeyCode.B)
+                pcall(function()
+                    -- M1 REAL (SEM CLIQUE)
+                    SkillRemote:InvokeServer("SW_Bloodmoon Twins_M1")
+                end)
             end
-            task.wait(0.05)
+            task.wait(0.1)
         end
     end)
 end
@@ -169,10 +156,11 @@ lp.CharacterAdded:Connect(function(char)
 end)
 
 --------------------------------------------------
--- API GLOBAL (OPCIONAL)
+-- API GLOBAL (PARA HUB / TOGGLE)
 --------------------------------------------------
 getgenv().AutoKill = {
     Start = function()
+        if getgenv().AUTOKILL_ENABLED then return end
         getgenv().AUTOKILL_ENABLED = true
         lockedTarget = nil
         applyAntiHit(getChar(), true)
@@ -180,6 +168,7 @@ getgenv().AutoKill = {
     end,
 
     Stop = function()
+        if not getgenv().AUTOKILL_ENABLED then return end
         getgenv().AUTOKILL_ENABLED = false
         lockedTarget = nil
         applyAntiHit(getChar(), false)
