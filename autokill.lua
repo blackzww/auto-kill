@@ -1,5 +1,10 @@
--- AutoKill FINAL v3 - TP MAIS PRÓXIMO (Delta)
+-- AutoKill CORE v8.1 (Separated / UI Ready)
+-- Stable Delta Version
+-- by blackzw
 
+--------------------------------------------------
+-- SERVICES
+--------------------------------------------------
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local VIM = game:GetService("VirtualInputManager")
@@ -8,40 +13,51 @@ local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
 --------------------------------------------------
--- GUI
+-- MODULE TABLE
 --------------------------------------------------
-local gui = Instance.new("ScreenGui")
-gui.Name = "AutoKillGUI"
-gui.ResetOnSpawn = false
-gui.Parent = lp:WaitForChild("PlayerGui")
+local AutoKill = {}
 
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0,180,0,45)
-btn.Position = UDim2.new(0.05,0,0.4,0)
-btn.Text = "AutoKill: OFF"
-btn.TextScaled = true
-btn.BackgroundColor3 = Color3.fromRGB(0,120,255)
-btn.TextColor3 = Color3.new(1,1,1)
-btn.BorderSizePixel = 0
-btn.Active = true
-btn.Draggable = true
-btn.Parent = gui
-
+--------------------------------------------------
+-- STATE
 --------------------------------------------------
 local enabled = false
-local switchCooldown = 1 -- 1 segundo para trocar 1–4
-local lastSwitch = 0
-local currentSlot = 1
+local lockedTarget = nil
+local lastTargetCheck = 0
+local renderConnection = nil
+local loopRunning = false
 
 --------------------------------------------------
--- Util: personagem
+-- UTIL
 --------------------------------------------------
 local function getChar()
     return lp.Character or lp.CharacterAdded:Wait()
 end
 
+local function isAlive(char)
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    return hum and hum.Health > 0
+end
+
 --------------------------------------------------
--- Jogador mais próximo (FIX ESTÁVEL)
+-- ANTI HIT (DELTA SAFE)
+--------------------------------------------------
+local function applyAntiHit(char, state)
+    if not char then return end
+
+    for _,v in ipairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not state
+        end
+    end
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.PlatformStand = false
+    end
+end
+
+--------------------------------------------------
+-- TARGET MAIS PRÓXIMO
 --------------------------------------------------
 local function getClosestPlayer()
     local char = getChar()
@@ -51,10 +67,9 @@ local function getClosestPlayer()
     local closest, dist = nil, math.huge
 
     for _,plr in ipairs(Players:GetPlayers()) do
-        if plr ~= lp and plr.Character then
-            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        if plr ~= lp and plr.Character and isAlive(plr.Character) then
             local phrp = plr.Character:FindFirstChild("HumanoidRootPart")
-            if hum and hum.Health > 0 and phrp then
+            if phrp then
                 local d = (phrp.Position - hrp.Position).Magnitude
                 if d < dist then
                     dist = d
@@ -68,16 +83,16 @@ local function getClosestPlayer()
 end
 
 --------------------------------------------------
--- AutoClick contínuo
+-- CLICK
 --------------------------------------------------
 local function autoClick()
-    local p = cam.ViewportSize / 2
+    local p = cam.ViewportSize * 0.5
     VIM:SendMouseButtonEvent(p.X, p.Y, 0, true, game, 0)
     VIM:SendMouseButtonEvent(p.X, p.Y, 0, false, game, 0)
 end
 
 --------------------------------------------------
--- Pressionar tecla
+-- KEY PRESS
 --------------------------------------------------
 local function press(key)
     VIM:SendKeyEvent(true, key, false, game)
@@ -85,90 +100,107 @@ local function press(key)
 end
 
 --------------------------------------------------
--- TP contínuo para o MAIS PRÓXIMO
+-- RENDER LOOP (TP + LOOK DOWN)
 --------------------------------------------------
-task.spawn(function()
-    while true do
-        if enabled then
-            local char = lp.Character
-            local targetChar = getClosestPlayer()
-            if char and targetChar then
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                local thrp = targetChar:FindFirstChild("HumanoidRootPart")
-                if hrp and thrp then
-                    hrp.CFrame = thrp.CFrame
-                end
+local function startRender()
+    if renderConnection then return end
+
+    renderConnection = RunService.RenderStepped:Connect(function()
+        if not enabled then return end
+
+        local char = getChar()
+        if not isAlive(char) then return end
+
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if tick() - lastTargetCheck > 0.3 then
+            lastTargetCheck = tick()
+            if not lockedTarget or not isAlive(lockedTarget) then
+                lockedTarget = getClosestPlayer()
             end
         end
-        RunService.RenderStepped:Wait()
+
+        if lockedTarget then
+            local thrp = lockedTarget:FindFirstChild("HumanoidRootPart")
+            if thrp then
+                local pos = thrp.Position + Vector3.new(0, 5, 0)
+                hrp.CFrame = CFrame.lookAt(pos, thrp.Position)
+            end
+        end
+    end)
+end
+
+local function stopRender()
+    if renderConnection then
+        renderConnection:Disconnect()
+        renderConnection = nil
     end
-end)
+end
 
 --------------------------------------------------
--- AutoClick infinito
+-- MAIN LOOP (CLICK + SKILLS)
 --------------------------------------------------
 task.spawn(function()
+    if loopRunning then return end
+    loopRunning = true
+
     while true do
         if enabled then
             autoClick()
-        end
-        RunService.RenderStepped:Wait()
-    end
-end)
-
---------------------------------------------------
--- ZXCVB SEM DELAY
---------------------------------------------------
-task.spawn(function()
-    while true do
-        if enabled then
             press(Enum.KeyCode.Z)
             press(Enum.KeyCode.X)
             press(Enum.KeyCode.C)
             press(Enum.KeyCode.V)
             press(Enum.KeyCode.B)
         end
-        RunService.RenderStepped:Wait()
+        task.wait(0.05)
     end
 end)
 
 --------------------------------------------------
--- Troca 1–4 com cooldown de 1s
+-- PUBLIC API (PARA UI)
 --------------------------------------------------
-task.spawn(function()
-    while true do
-        if enabled and tick() - lastSwitch >= switchCooldown then
-            lastSwitch = tick()
+function AutoKill.Start()
+    if enabled then return end
+    enabled = true
+    lockedTarget = nil
 
-            if currentSlot == 1 then
-                press(Enum.KeyCode.One)
-            elseif currentSlot == 2 then
-                press(Enum.KeyCode.Two)
-            elseif currentSlot == 3 then
-                press(Enum.KeyCode.Three)
-            elseif currentSlot == 4 then
-                press(Enum.KeyCode.Four)
-            end
+    applyAntiHit(getChar(), true)
+    startRender()
+end
 
-            currentSlot += 1
-            if currentSlot > 4 then
-                currentSlot = 1
-            end
-        end
-        RunService.Heartbeat:Wait()
-    end
-end)
+function AutoKill.Stop()
+    if not enabled then return end
+    enabled = false
+    lockedTarget = nil
 
---------------------------------------------------
--- Toggle
---------------------------------------------------
-btn.MouseButton1Click:Connect(function()
-    enabled = not enabled
-    if enabled then
-        btn.Text = "AutoKill: ON"
-        btn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+    applyAntiHit(getChar(), false)
+    stopRender()
+end
+
+function AutoKill.Toggle(state)
+    if state then
+        AutoKill.Start()
     else
-        btn.Text = "AutoKill: OFF"
-        btn.BackgroundColor3 = Color3.fromRGB(0,120,255)
+        AutoKill.Stop()
+    end
+end
+
+function AutoKill.IsEnabled()
+    return enabled
+end
+
+--------------------------------------------------
+-- RESPAWN FIX
+--------------------------------------------------
+lp.CharacterAdded:Connect(function(char)
+    task.wait(0.4)
+    if enabled then
+        applyAntiHit(char, true)
     end
 end)
+
+--------------------------------------------------
+return AutoKill---------------------------------
+return Aut
