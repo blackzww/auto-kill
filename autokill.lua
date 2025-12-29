@@ -81,9 +81,14 @@ end
 -- CLICK / KEYS
 --------------------------------------------------
 local function autoClick()
-    local p = cam.ViewportSize * 0.5
-    VIM:SendMouseButtonEvent(p.X, p.Y, 0, true, game, 0)
-    VIM:SendMouseButtonEvent(p.X, p.Y, 0, false, game, 0)
+    local size = cam.ViewportSize
+
+    -- clica no canto inferior direito (fora de qualquer UI)
+    local x = size.X - 10
+    local y = size.Y - 10
+
+    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
 end
 
 local function press(key)
