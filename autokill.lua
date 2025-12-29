@@ -1,20 +1,27 @@
+--==================================================
 -- AutoKill CORE v8.3
--- NO CLICK / REMOTE BASED
--- Toggle Safe / WindUI Ready
--- Stable Delta Version
+-- King Legacy | Delta Safe
 -- by blackzw
+--==================================================
 
 --------------------------------------------------
 -- SERVICES
 --------------------------------------------------
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local lp = Players.LocalPlayer
+local cam = workspace.CurrentCamera
 
 --------------------------------------------------
--- REMOTE (KING LEGACY)
+-- GLOBAL STATE (PARA TOGGLE)
+--------------------------------------------------
+getgenv().AUTOKILL_ENABLED = getgenv().AUTOKILL_ENABLED or false
+
+--------------------------------------------------
+-- REMOTES
 --------------------------------------------------
 local SkillRemote = ReplicatedStorage
     :WaitForChild("Chest")
@@ -22,10 +29,17 @@ local SkillRemote = ReplicatedStorage
     :WaitForChild("Functions")
     :WaitForChild("SkillAction")
 
---------------------------------------------------
--- GLOBAL STATE (HUB SAFE)
---------------------------------------------------
-getgenv().AUTOKILL_ENABLED = getgenv().AUTOKILL_ENABLED or false
+local KenRemote = ReplicatedStorage
+    :WaitForChild("Chest")
+    :WaitForChild("Remotes")
+    :WaitForChild("Functions")
+    :WaitForChild("KenEvent")
+
+local ArmamentRemote = ReplicatedStorage
+    :WaitForChild("Chest")
+    :WaitForChild("Remotes")
+    :WaitForChild("Events")
+    :WaitForChild("Armament")
 
 --------------------------------------------------
 -- INTERNAL STATE
@@ -60,7 +74,7 @@ local function applyAntiHit(char, state)
 end
 
 --------------------------------------------------
--- TARGET
+-- TARGET MAIS PRÓXIMO
 --------------------------------------------------
 local function getClosestPlayer()
     local char = getChar()
@@ -68,7 +82,6 @@ local function getClosestPlayer()
     if not hrp then return nil end
 
     local closest, dist = nil, math.huge
-
     for _,plr in ipairs(Players:GetPlayers()) do
         if plr ~= lp and plr.Character and isAlive(plr.Character) then
             local phrp = plr.Character:FindFirstChild("HumanoidRootPart")
@@ -81,8 +94,28 @@ local function getClosestPlayer()
             end
         end
     end
-
     return closest
+end
+
+--------------------------------------------------
+-- ESPADA CLICK (MUITO RÁPIDO)
+--------------------------------------------------
+local function swordSpam()
+    -- spam real de M1
+    VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+end
+
+--------------------------------------------------
+-- HAKI
+--------------------------------------------------
+local function enableHaki()
+    pcall(function()
+        KenRemote:InvokeServer()
+    end)
+    pcall(function()
+        ArmamentRemote:FireServer()
+    end)
 end
 
 --------------------------------------------------
@@ -100,7 +133,7 @@ local function startRender()
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
 
-        if tick() - lastTargetCheck > 0.3 then
+        if tick() - lastTargetCheck > 0.25 then
             lastTargetCheck = tick()
             if not lockedTarget or not isAlive(lockedTarget) then
                 lockedTarget = getClosestPlayer()
@@ -127,18 +160,50 @@ local function stopRender()
 end
 
 --------------------------------------------------
--- MAIN LOOP (REMOTE ATTACK)
+-- MAIN LOOP (SKILLS + ESPADA)
 --------------------------------------------------
 if not loopStarted then
     loopStarted = true
 
     task.spawn(function()
+        local args = {
+            "DF_GasGas_Z",
+            {
+                MouseHit = CFrame.new(0, 0, 0),
+                Type = "Down"
+            }
+        }
+
         while true do
             if getgenv().AUTOKILL_ENABLED then
-                pcall(function()
-                    -- M1 REAL (SEM CLIQUE)
-                    SkillRemote:InvokeServer("SW_Bloodmoon Twins_M1")
-                end)
+                enableHaki()
+
+                -- SKILLS
+                args[1] = "DF_GasGas_Z"
+                SkillRemote:InvokeServer(unpack(args))
+                task.wait(0.07)
+
+                args[1] = "DF_GasGas_X"
+                SkillRemote:InvokeServer(unpack(args))
+                task.wait(0.07)
+
+                args[1] = "DF_GasGas_C"
+                SkillRemote:InvokeServer(unpack(args))
+                task.wait(0.07)
+
+                args[1] = "DF_GasGas_V"
+                SkillRemote:InvokeServer(unpack(args))
+                task.wait(0.07)
+
+                args[1] = "DF_GasGas_B"
+                SkillRemote:InvokeServer(unpack(args))
+                task.wait(0.07)
+
+                -- ESPADA SPAM (FORTE)
+                for i = 1, 6 do
+                    swordSpam()
+                    task.wait(0.03)
+                end
             end
             task.wait(0.1)
         end
@@ -152,15 +217,15 @@ lp.CharacterAdded:Connect(function(char)
     task.wait(0.4)
     if getgenv().AUTOKILL_ENABLED then
         applyAntiHit(char, true)
+        startRender()
     end
 end)
 
 --------------------------------------------------
--- API GLOBAL (PARA HUB / TOGGLE)
+-- API GLOBAL (PARA HUB)
 --------------------------------------------------
 getgenv().AutoKill = {
     Start = function()
-        if getgenv().AUTOKILL_ENABLED then return end
         getgenv().AUTOKILL_ENABLED = true
         lockedTarget = nil
         applyAntiHit(getChar(), true)
@@ -168,7 +233,6 @@ getgenv().AutoKill = {
     end,
 
     Stop = function()
-        if not getgenv().AUTOKILL_ENABLED then return end
         getgenv().AUTOKILL_ENABLED = false
         lockedTarget = nil
         applyAntiHit(getChar(), false)
