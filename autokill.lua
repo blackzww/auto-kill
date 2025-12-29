@@ -1,4 +1,5 @@
--- AutoKill CORE v8.1 (Separated / UI Ready)
+-- AutoKill CORE v8.2
+-- Toggle Safe / WindUI Ready
 -- Stable Delta Version
 -- by blackzw
 
@@ -13,18 +14,17 @@ local lp = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
 --------------------------------------------------
--- MODULE TABLE
+-- GLOBAL STATE (PARA HUB)
 --------------------------------------------------
-local AutoKill = {}
+getgenv().AUTOKILL_ENABLED = getgenv().AUTOKILL_ENABLED or false
 
 --------------------------------------------------
--- STATE
+-- INTERNAL STATE
 --------------------------------------------------
-local enabled = false
 local lockedTarget = nil
 local lastTargetCheck = 0
 local renderConnection = nil
-local loopRunning = false
+local loopStarted = false
 
 --------------------------------------------------
 -- UTIL
@@ -39,7 +39,7 @@ local function isAlive(char)
 end
 
 --------------------------------------------------
--- ANTI HIT (DELTA SAFE)
+-- ANTI HIT
 --------------------------------------------------
 local function applyAntiHit(char, state)
     if not char then return end
@@ -49,15 +49,10 @@ local function applyAntiHit(char, state)
             v.CanCollide = not state
         end
     end
-
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.PlatformStand = false
-    end
 end
 
 --------------------------------------------------
--- TARGET MAIS PRÓXIMO
+-- TARGET
 --------------------------------------------------
 local function getClosestPlayer()
     local char = getChar()
@@ -83,7 +78,7 @@ local function getClosestPlayer()
 end
 
 --------------------------------------------------
--- CLICK
+-- CLICK / KEYS
 --------------------------------------------------
 local function autoClick()
     local p = cam.ViewportSize * 0.5
@@ -91,22 +86,19 @@ local function autoClick()
     VIM:SendMouseButtonEvent(p.X, p.Y, 0, false, game, 0)
 end
 
---------------------------------------------------
--- KEY PRESS
---------------------------------------------------
 local function press(key)
     VIM:SendKeyEvent(true, key, false, game)
     VIM:SendKeyEvent(false, key, false, game)
 end
 
 --------------------------------------------------
--- RENDER LOOP (TP + LOOK DOWN)
+-- RENDER LOOP
 --------------------------------------------------
 local function startRender()
     if renderConnection then return end
 
     renderConnection = RunService.RenderStepped:Connect(function()
-        if not enabled then return end
+        if not getgenv().AUTOKILL_ENABLED then return end
 
         local char = getChar()
         if not isAlive(char) then return end
@@ -124,8 +116,10 @@ local function startRender()
         if lockedTarget then
             local thrp = lockedTarget:FindFirstChild("HumanoidRootPart")
             if thrp then
-                local pos = thrp.Position + Vector3.new(0, 5, 0)
-                hrp.CFrame = CFrame.lookAt(pos, thrp.Position)
+                hrp.CFrame = CFrame.lookAt(
+                    thrp.Position + Vector3.new(0, 5, 0),
+                    thrp.Position
+                )
             end
         end
     end)
@@ -139,56 +133,24 @@ local function stopRender()
 end
 
 --------------------------------------------------
--- MAIN LOOP (CLICK + SKILLS)
+-- MAIN LOOP (SÓ 1 VEZ)
 --------------------------------------------------
-task.spawn(function()
-    if loopRunning then return end
-    loopRunning = true
+if not loopStarted then
+    loopStarted = true
 
-    while true do
-        if enabled then
-            autoClick()
-            press(Enum.KeyCode.Z)
-            press(Enum.KeyCode.X)
-            press(Enum.KeyCode.C)
-            press(Enum.KeyCode.V)
-            press(Enum.KeyCode.B)
+    task.spawn(function()
+        while true do
+            if getgenv().AUTOKILL_ENABLED then
+                autoClick()
+                press(Enum.KeyCode.Z)
+                press(Enum.KeyCode.X)
+                press(Enum.KeyCode.C)
+                press(Enum.KeyCode.V)
+                press(Enum.KeyCode.B)
+            end
+            task.wait(0.05)
         end
-        task.wait(0.05)
-    end
-end)
-
---------------------------------------------------
--- PUBLIC API (PARA UI)
---------------------------------------------------
-function AutoKill.Start()
-    if enabled then return end
-    enabled = true
-    lockedTarget = nil
-
-    applyAntiHit(getChar(), true)
-    startRender()
-end
-
-function AutoKill.Stop()
-    if not enabled then return end
-    enabled = false
-    lockedTarget = nil
-
-    applyAntiHit(getChar(), false)
-    stopRender()
-end
-
-function AutoKill.Toggle(state)
-    if state then
-        AutoKill.Start()
-    else
-        AutoKill.Stop()
-    end
-end
-
-function AutoKill.IsEnabled()
-    return enabled
+    end)
 end
 
 --------------------------------------------------
@@ -196,11 +158,26 @@ end
 --------------------------------------------------
 lp.CharacterAdded:Connect(function(char)
     task.wait(0.4)
-    if enabled then
+    if getgenv().AUTOKILL_ENABLED then
         applyAntiHit(char, true)
     end
 end)
 
 --------------------------------------------------
-return AutoKill---------------------------------
-return Aut
+-- API GLOBAL (OPCIONAL)
+--------------------------------------------------
+getgenv().AutoKill = {
+    Start = function()
+        getgenv().AUTOKILL_ENABLED = true
+        lockedTarget = nil
+        applyAntiHit(getChar(), true)
+        startRender()
+    end,
+
+    Stop = function()
+        getgenv().AUTOKILL_ENABLED = false
+        lockedTarget = nil
+        applyAntiHit(getChar(), false)
+        stopRender()
+    end
+}
