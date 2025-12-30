@@ -1,8 +1,17 @@
--- AutoKill CORE v8.3
--- NO CLICK / REMOTE BASED
--- Toggle Safe / WindUI Ready
--- Stable Delta Version
+--==================================================
+-- AutoKill CORE v5 (API MODE)
+-- Controlado por WindUI
 -- by blackzw
+--==================================================
+
+--------------------------------------------------
+-- PROTEÇÃO DUPLA
+--------------------------------------------------
+if getgenv().AutoKillLoaded then
+    warn("AutoKill já carregado")
+    return
+end
+getgenv().AutoKillLoaded = true
 
 --------------------------------------------------
 -- SERVICES
@@ -10,80 +19,63 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VIM = game:GetService("VirtualInputManager")
 
 local lp = Players.LocalPlayer
 
 --------------------------------------------------
--- AUTO ATIVAR AO EXECUTAR O SCRIPT (EXATO)
+-- REMOTE M1
 --------------------------------------------------
-game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("Armament"):FireServer()
-
-game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("KenEvent"):InvokeServer()
-
---------------------------------------------------
--- REMOTE (KING LEGACY)
---------------------------------------------------
-local SkillRemote = ReplicatedStorage
-    :WaitForChild("Chest")
-    :WaitForChild("Remotes")
-    :WaitForChild("Functions")
-    :WaitForChild("SkillAction")
+local SkillRemote =
+    ReplicatedStorage:WaitForChild("Chest")
+        :WaitForChild("Remotes")
+        :WaitForChild("Functions")
+        :WaitForChild("SkillAction")
 
 --------------------------------------------------
--- GLOBAL STATE (HUB SAFE)
+-- SETTINGS
 --------------------------------------------------
-getgenv().AUTOKILL_ENABLED = getgenv().AUTOKILL_ENABLED or false
+local ABOVE_STUDS = 5
+local M1_DELAY = 0.08
+local SKILL_DELAY = 0.12
+local SWITCH_COOLDOWN = 1
 
 --------------------------------------------------
--- INTERNAL STATE
+-- VARS
 --------------------------------------------------
-local lockedTarget = nil
-local lastTargetCheck = 0
-local renderConnection = nil
-local loopStarted = false
+local enabled = false
+local lastM1 = 0
+local lastSkill = 0
+local lastSwitch = 0
+local currentSlot = 1
 
 --------------------------------------------------
--- UTIL
+-- UTILS
 --------------------------------------------------
 local function getChar()
-    return lp.Character or lp.CharacterAdded:Wait()
-end
-
-local function isAlive(char)
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    return hum and hum.Health > 0
-end
-
---------------------------------------------------
--- ANTI HIT
---------------------------------------------------
-local function applyAntiHit(char, state)
+    local char = lp.Character
     if not char then return end
-    for _,v in ipairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = not state
-        end
-    end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+    return char, hrp
 end
 
 --------------------------------------------------
--- TARGET
+-- GET CLOSEST PLAYER
 --------------------------------------------------
-local function getClosestPlayer()
-    local char = getChar()
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
+local function getClosestPlayer(hrp)
     local closest, dist = nil, math.huge
 
     for _,plr in ipairs(Players:GetPlayers()) do
-        if plr ~= lp and plr.Character and isAlive(plr.Character) then
+        if plr ~= lp and plr.Character then
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
             local phrp = plr.Character:FindFirstChild("HumanoidRootPart")
-            if phrp then
+            if hum and phrp and hum.Health > 0 then
                 local d = (phrp.Position - hrp.Position).Magnitude
                 if d < dist then
                     dist = d
-                    closest = plr.Character
+                    closest = phrp
                 end
             end
         end
@@ -93,136 +85,84 @@ local function getClosestPlayer()
 end
 
 --------------------------------------------------
--- RENDER LOOP (TP + LOOK)
+-- INPUT
 --------------------------------------------------
-local function startRender()
-    if renderConnection then return end
-
-    renderConnection = RunService.RenderStepped:Connect(function()
-        if not getgenv().AUTOKILL_ENABLED then return end
-
-        local char = getChar()
-        if not isAlive(char) then return end
-
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-
-        if tick() - lastTargetCheck > 0.3 then
-            lastTargetCheck = tick()
-            if not lockedTarget or not isAlive(lockedTarget) then
-                lockedTarget = getClosestPlayer()
-            end
-        end
-
-        if lockedTarget then
-            local thrp = lockedTarget:FindFirstChild("HumanoidRootPart")
-            if thrp then
-                hrp.CFrame = CFrame.lookAt(
-                    thrp.Position + Vector3.new(0, 5, 0),
-                    thrp.Position
-                )
-            end
-        end
-    end)
+local function press(key)
+    VIM:SendKeyEvent(true, key, false, game)
+    VIM:SendKeyEvent(false, key, false, game)
 end
 
-local function stopRender()
-    if renderConnection then
-        renderConnection:Disconnect()
-        renderConnection = nil
+--------------------------------------------------
+-- AUTO M1
+--------------------------------------------------
+local function autoM1()
+    SkillRemote:InvokeServer("SW_Bloodmoon Twins_M1")
+end
+
+--------------------------------------------------
+-- MAIN LOOP (ÚNICO)
+--------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    if not enabled then return end
+
+    local char, hrp = getChar()
+    if not char then return end
+
+    -- TP EM CIMA + DEITADO
+    local targetHRP = getClosestPlayer(hrp)
+    if targetHRP then
+        hrp.CFrame =
+            CFrame.new(targetHRP.Position + Vector3.new(0, ABOVE_STUDS, 0))
+            * CFrame.Angles(math.rad(90), 0, 0)
     end
-end
 
---------------------------------------------------
--- MAIN LOOP (REMOTE ATTACK + SKILLS)
---------------------------------------------------
-if not loopStarted then
-    loopStarted = true
+    -- M1
+    if tick() - lastM1 >= M1_DELAY then
+        lastM1 = tick()
+        autoM1()
+    end
 
-    task.spawn(function()
-        while true do
-            if getgenv().AUTOKILL_ENABLED then
-                pcall(function()
-                    -- M1 REAL (SEM CLIQUE)
-                    SkillRemote:InvokeServer("SW_Bloodmoon Twins_M1")
-                end)
+    -- SKILLS
+    if tick() - lastSkill >= SKILL_DELAY then
+        lastSkill = tick()
+        press(Enum.KeyCode.Z)
+        press(Enum.KeyCode.X)
+        press(Enum.KeyCode.C)
+        press(Enum.KeyCode.V)
+        press(Enum.KeyCode.B)
+    end
 
-                pcall(function()
-                    local args = {
-                        "DF_GasGas_Z",
-                        {
-                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-                            Type = "Down"
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
-                end)
+    -- SWITCH 1–4
+    if tick() - lastSwitch >= SWITCH_COOLDOWN then
+        lastSwitch = tick()
 
-                pcall(function()
-                    local args = {
-                        "DF_GasGas_X",
-                        {
-                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-                            Type = "Down"
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
-                end)
+        local keys = {
+            Enum.KeyCode.One,
+            Enum.KeyCode.Two,
+            Enum.KeyCode.Three,
+            Enum.KeyCode.Four
+        }
 
-                pcall(function()
-                    local args = {
-                        "DF_GasGas_C",
-                        {
-                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-                            Type = "Down"
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
-                end)
-
-                pcall(function()
-                    local args = {
-                        "DF_GasGas_V",
-                        {
-                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
-                            Type = "Down"
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
-                end)
-            end
-            task.wait(0.1)
+        press(keys[currentSlot])
+        currentSlot += 1
+        if currentSlot > 4 then
+            currentSlot = 1
         end
-    end)
-end
-
---------------------------------------------------
--- RESPAWN FIX
---------------------------------------------------
-lp.CharacterAdded:Connect(function(char)
-    task.wait(0.4)
-    if getgenv().AUTOKILL_ENABLED then
-        applyAntiHit(char, true)
     end
 end)
 
 --------------------------------------------------
--- API GLOBAL (PARA HUB / TOGGLE)
+-- API GLOBAL (WIND UI)
 --------------------------------------------------
 getgenv().AutoKill = {
+
     Start = function()
-        if getgenv().AUTOKILL_ENABLED then return end
-        getgenv().AUTOKILL_ENABLED = true
-        lockedTarget = nil
-        applyAntiHit(getChar(), true)
-        startRender()
+        enabled = true
+        warn("[AutoKill] ATIVADO")
     end,
 
     Stop = function()
-        if not getgenv().AUTOKILL_ENABLED then return end
-        getgenv().AUTOKILL_ENABLED = false
-        lockedTarget = nil
-        applyAntiHit(getChar(), false)
-        stopRender()
+        enabled = false
+        warn("[AutoKill] DESATIVADO")
     end
 }
