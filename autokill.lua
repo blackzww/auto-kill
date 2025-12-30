@@ -1,8 +1,8 @@
--- AutoKill CORE v8.3 (modified) - com novas skills adicionadas
+-- AutoKill CORE v8.3
 -- NO CLICK / REMOTE BASED
 -- Toggle Safe / WindUI Ready
 -- Stable Delta Version
--- by blackzw (modificado)
+-- by blackzw
 
 --------------------------------------------------
 -- SERVICES
@@ -14,18 +14,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local lp = Players.LocalPlayer
 
 --------------------------------------------------
--- REMOTES ROOT
+-- AUTO ATIVAR AO EXECUTAR O SCRIPT (EXATO)
 --------------------------------------------------
-local RemotesRoot = ReplicatedStorage
+game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Events"):WaitForChild("Armament"):FireServer()
+
+game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("KenEvent"):InvokeServer()
+
+--------------------------------------------------
+-- REMOTE (KING LEGACY)
+--------------------------------------------------
+local SkillRemote = ReplicatedStorage
     :WaitForChild("Chest")
     :WaitForChild("Remotes")
-
-local EventsRemoteFolder = RemotesRoot:WaitForChild("Events")
-local FunctionsRemoteFolder = RemotesRoot:WaitForChild("Functions")
-
-local ArmamentEvent = EventsRemoteFolder:WaitForChild("Armament")
-local SkillAction = FunctionsRemoteFolder:WaitForChild("SkillAction")
-local KenEvent = FunctionsRemoteFolder:WaitForChild("KenEvent")
+    :WaitForChild("Functions")
+    :WaitForChild("SkillAction")
 
 --------------------------------------------------
 -- GLOBAL STATE (HUB SAFE)
@@ -132,77 +134,61 @@ local function stopRender()
 end
 
 --------------------------------------------------
--- ATIVAR ARMAMENT (AO EXECUTAR O SCRIPT)
---------------------------------------------------
-pcall(function()
-    ArmamentEvent:FireServer()
-end)
-
---------------------------------------------------
--- MAIN LOOP (REMOTE ATTACK + NOVAS SKILLS)
+-- MAIN LOOP (REMOTE ATTACK + SKILLS)
 --------------------------------------------------
 if not loopStarted then
     loopStarted = true
 
     task.spawn(function()
-        -- CFrame usado pelas skills DF_GasGas_*
-        local gasCFrame = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1)
-
         while true do
             if getgenv().AUTOKILL_ENABLED then
                 pcall(function()
                     -- M1 REAL (SEM CLIQUE)
-                    SkillAction:InvokeServer("SW_Bloodmoon Twins_M1")
+                    SkillRemote:InvokeServer("SW_Bloodmoon Twins_M1")
                 end)
 
-                -- Invocar KenEvent (se existir)
                 pcall(function()
-                    KenEvent:InvokeServer()
-                end)
-
-                -- Disparar as skills DF_GasGas_{Z,X,C,V}
-                pcall(function()
-                    local argsZ = {
+                    local args = {
                         "DF_GasGas_Z",
                         {
-                            MouseHit = gasCFrame,
+                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
                             Type = "Down"
                         }
                     }
-                    SkillAction:InvokeServer(unpack(argsZ))
+                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
                 end)
 
                 pcall(function()
-                    local argsX = {
+                    local args = {
                         "DF_GasGas_X",
                         {
-                            MouseHit = gasCFrame,
+                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
                             Type = "Down"
                         }
                     }
-                    SkillAction:InvokeServer(unpack(argsX))
+                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
                 end)
 
                 pcall(function()
-                    local argsC = {
+                    local args = {
                         "DF_GasGas_C",
                         {
-                            MouseHit = gasCFrame,
+                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
                             Type = "Down"
                         }
                     }
-                    SkillAction:InvokeServer(unpack(argsC))
+                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
                 end)
 
                 pcall(function()
-                    local argsV = {
+                    local args = {
                         "DF_GasGas_V",
                         {
-                            MouseHit = gasCFrame,
+                            MouseHit = CFrame.new(2311.26953125, 51.18202590942383, 584.1146240234375, 1, 0, 0, 0, 1, 0, 0, 0, 1),
                             Type = "Down"
                         }
                     }
-                    SkillAction:InvokeServer(unpack(argsV))
+                    game:GetService("ReplicatedStorage"):WaitForChild("Chest"):WaitForChild("Remotes"):WaitForChild("Functions"):WaitForChild("SkillAction"):InvokeServer(unpack(args))
                 end)
             end
             task.wait(0.1)
